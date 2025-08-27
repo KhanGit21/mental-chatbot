@@ -97,7 +97,7 @@ def get_response(user_input):
     else:
         response = f"{emotion_templates.get(emotion,'')}I'm here to listen. Tell me more."
 
-    return response
+    return response, intent, intent_conf, emotion, emotion_conf
 
 # ----------------------------
 # 5. Streamlit UI
@@ -115,6 +115,7 @@ if st.button("Send"):
         st.markdown(f"**Emotion:** {emotion} (score: {emotion_conf:.2f})")
     else:
         st.warning("Please type something to chat.")
+
 
 
 
