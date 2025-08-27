@@ -62,9 +62,26 @@ emotion_templates = {
 # ----------------------------
 def get_response(user_input):
     clean_input = preprocess_text(user_input)
-    intent = intent_pipeline.predict([clean_input])[0]
-    emotion = emotion_pipeline.predict([clean_input])[0]
+
+    # Predict intent
+    proba = intent_pipeline.predict_proba([clean_input])[0]
+    best_idx = proba.argmax()
+    intent_conf = proba[best_idx]
+    intent = intent_pipeline.classes_[best_idx]
     
+    if intent_conf < 0.7:
+        intent = "fallback"
+
+    # Predict emotion
+    proba_e = emotion_pipeline.predict_proba([clean_input])[0]
+    best_idx_e = proba_e.argmax()
+    emotion_conf = proba_e[best_idx_e]
+    emotion = emotion_pipeline.classes_[best_idx_e]
+    
+    if emotion_conf < 0.6:
+        emotion = "neutral"
+
+    # Generate response
     if intent == "faq":
         user_vector = faq_vectorizer.transform([clean_input])
         similarities = cosine_similarity(user_vector, faq_vectorizer.transform(df_faq['clean_question']))
@@ -75,9 +92,11 @@ def get_response(user_input):
         response = f"{emotion_templates.get(emotion,'')}Hello! How can I help you today?"
     elif intent == "farewell":
         response = f"{emotion_templates.get(emotion,'')}Goodbye! Take care."
+    elif intent == "fallback":
+        response = "I'm not sure I understand. Can you rephrase your question?"
     else:
         response = f"{emotion_templates.get(emotion,'')}I'm here to listen. Tell me more."
-    
+
     return response
 
 # ----------------------------
@@ -94,4 +113,5 @@ if st.button("Send"):
         st.text_area("Bot:", value=reply, height=150)
     else:
         st.warning("Please type something to chat.")
+
 
