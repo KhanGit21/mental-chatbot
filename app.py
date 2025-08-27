@@ -1,0 +1,95 @@
+import streamlit as st
+import pickle
+import pandas as pd
+from sklearn.metrics.pairwise import cosine_similarity
+import nltk
+import re
+from spellchecker import SpellChecker
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+
+# ----------------------------
+# 1. Load models & data
+# ----------------------------
+intent_pipeline = pickle.load(open("model/intent_pipeline.pkl", "rb"))
+emotion_pipeline = pickle.load(open("model/emotion_pipeline.pkl", "rb"))
+faq_vectorizer = pickle.load(open("model/faq_vectorizer.pkl", "rb"))
+df_faq = pd.read_pickle("model/faq_dataset.pkl")
+
+# ----------------------------
+# 2. Preprocessing function
+# ----------------------------
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('wordnet')
+
+stop_words = set(stopwords.words('english'))
+lemmatizer = WordNetLemmatizer()
+spell = SpellChecker()
+
+def preprocess_text(text):
+    if not isinstance(text, str) or text.strip() == "":
+        return ""
+    text = text.lower()
+    text = re.sub(r'[^a-z\s]', '', text)
+    tokens = nltk.word_tokenize(text)
+    corrected = []
+    for word in tokens:
+        if word in stop_words or word.strip() == "":
+            corrected.append(word)
+        else:
+            # pyspellchecker might return None, so we fallback to the original word
+            c = spell.correction(word)
+            corrected.append(c if c is not None else word)
+    
+    lemmatized = [lemmatizer.lemmatize(word) for word in corrected if word not in stop_words]
+    return ' '.join(lemmatized)
+
+# ----------------------------
+# 3. Emotion templates
+# ----------------------------
+emotion_templates = {
+    "anxious": "Take a deep breath and calm down. ",
+    "depressed": "I understand you feel down. ",
+    "happy": "Glad to hear from you! ",
+    "angry": "I hear your frustration. ",
+    "suicidal": "Please reach out to a professional immediately: "
+}
+
+# ----------------------------
+# 4. Response function
+# ----------------------------
+def get_response(user_input):
+    clean_input = preprocess_text(user_input)
+    intent = intent_pipeline.predict([clean_input])[0]
+    emotion = emotion_pipeline.predict([clean_input])[0]
+    
+    if intent == "faq":
+        user_vector = faq_vectorizer.transform([clean_input])
+        similarities = cosine_similarity(user_vector, faq_vectorizer.transform(df_faq['clean_question']))
+        best_idx = similarities.argmax()
+        answer = df_faq.iloc[best_idx]['answer']
+        response = f"{emotion_templates.get(emotion,'')}{answer}"
+    elif intent == "greeting":
+        response = f"{emotion_templates.get(emotion,'')}Hello! How can I help you today?"
+    elif intent == "farewell":
+        response = f"{emotion_templates.get(emotion,'')}Goodbye! Take care."
+    else:
+        response = f"{emotion_templates.get(emotion,'')}I'm here to listen. Tell me more."
+    
+    return response
+
+# ----------------------------
+# 5. Streamlit UI
+# ----------------------------
+st.title("🧠 Mental Health Chatbot")
+st.write("Talk to the bot about your mental health, stress, or questions.")
+
+user_input = st.text_input("You:", "")
+
+if st.button("Send"):
+    if user_input.strip() != "":
+        reply = get_response(user_input)
+        st.text_area("Bot:", value=reply, height=150)
+    else:
+        st.warning("Please type something to chat.")
