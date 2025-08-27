@@ -78,7 +78,7 @@ def get_response(user_input):
     emotion_conf = proba_e[best_idx_e]
     emotion = emotion_pipeline.classes_[best_idx_e]
     
-    if emotion_conf < 0.4:
+    if emotion_conf < 0.2:
         emotion = "neutral"
 
     # Generate response
@@ -115,6 +115,7 @@ if st.button("Send"):
         st.markdown(f"**Emotion:** {emotion} (score: {emotion_conf:.2f})")
     else:
         st.warning("Please type something to chat.")
+
 
 
 
