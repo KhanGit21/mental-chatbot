@@ -20,6 +20,7 @@ df_faq = pd.read_pickle("model/faq_dataset.pkl")
 # 2. Preprocessing function
 # ----------------------------
 nltk.download('punkt')
+nltk.download('punkt_tab')
 nltk.download('stopwords')
 nltk.download('wordnet')
 
@@ -93,3 +94,4 @@ if st.button("Send"):
         st.text_area("Bot:", value=reply, height=150)
     else:
         st.warning("Please type something to chat.")
+
