@@ -110,9 +110,12 @@ user_input = st.text_input("You:", "")
 if st.button("Send"):
     if user_input.strip() != "":
         reply = get_response(user_input)
-        st.text_area("Bot:", value=reply, height=150)
+        st.text_area("Bot:", value=reply, height=150, disabled=True)
+        st.markdown(f"**Intent:** {intent} (score: {intent_conf:.2f})")
+        st.markdown(f"**Emotion:** {emotion} (score: {emotion_conf:.2f})")
     else:
         st.warning("Please type something to chat.")
+
 
 
 
