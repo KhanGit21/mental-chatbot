@@ -69,7 +69,7 @@ def get_response(user_input):
     intent_conf = proba[best_idx]
     intent = intent_pipeline.classes_[best_idx]
     
-    if intent_conf < 0.7:
+    if intent_conf < 0.4:
         intent = "fallback"
 
     # Predict emotion
@@ -78,7 +78,7 @@ def get_response(user_input):
     emotion_conf = proba_e[best_idx_e]
     emotion = emotion_pipeline.classes_[best_idx_e]
     
-    if emotion_conf < 0.6:
+    if emotion_conf < 0.4:
         emotion = "neutral"
 
     # Generate response
@@ -113,5 +113,6 @@ if st.button("Send"):
         st.text_area("Bot:", value=reply, height=150)
     else:
         st.warning("Please type something to chat.")
+
 
 
